@@ -95,4 +95,33 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        running = True
+        while running:
+            # Fetch the next instruction
+            self.ir = self.ram_read(self.pc)
+            op_size = 1
+
+            # Decode then execute
+            if self.ir == 0b10000010:  # LDI
+                # Set the value of a register to an integer
+                self.mar = self.ram_read(self.pc + 1)  # Load register number
+                self.mdr = self.ram_read(self.pc + 2)  # Load the integer we are storing
+                self.reg[self.mar] = self.mdr  # Store that value
+                op_size = 3  # Set op_size
+
+            elif self.ir == 0b01000111:  # PRN
+                # Print numeric value stored in the given register
+                self.mar = self.ram_read(self.pc + 1)  # Load register number
+                self.mdr = self.reg[self.mar]  # load the number from the register
+                print(self.mdr)  # print the number
+                op_size = 2  # Set op_size
+
+            elif self.ir == 0b00000001:  # HLT
+                # Halt the emulator
+                running = False
+
+            else:
+                raise Exception(f"Instruction code not implemented: %02X" % self.ir)
+            
+            # increment the program counter
+            self.pc += op_size

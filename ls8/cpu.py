@@ -48,6 +48,26 @@ class CPU:
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
+    
+    def ram_read(self, address):
+        """
+        returns the value in RAM at the given address
+        """
+        # Ensure it is a valid address
+        if address < len(self.ram) and address >= 0:
+            return self.ram[address]
+        else:
+            raise IndexError(f"Invalid RAM address given: %02X" % address)
+    
+    def ram_write(self, value, address):
+        """
+        Writes a value to RAM at the given address
+        """
+        # Ensure it is a valid address
+        if address < len(self.ram) and address >= 0:
+            self.ram[address] = value
+        else:
+            raise IndexError(f"Invalid RAM address given: %02X" % address)
 
     def trace(self):
         """

@@ -7,7 +7,16 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        # special registers
+        self.pc = 0   # program counter, address of the currently executing instruction
+        self.ir = 0   # instruction register, copy of the currently executing instruction
+        self.mar = 0  # memory address register, holds the address we're reading or writing
+        self.mdr = 0  # memory data register, holds the value to write, or the value just read
+
+        # storage
+        self.ram = [0] * 256   # RAM storage
+        self.reg = [0] * 8     # register storage
+        self.reg[7] = 0xF4     # R7 defaults to 0xF4 (stack pointer)
 
     def load(self):
         """Load a program into memory."""
@@ -44,8 +53,11 @@ class CPU:
         """
         Handy function to print out the CPU state. You might want to call this
         from run() if you need help debugging.
+
+        Prints all values in hexidecimal.
         """
 
+        # Print the program counter and the next 3 RAM values
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
             #self.fl,
@@ -55,6 +67,7 @@ class CPU:
             self.ram_read(self.pc + 2)
         ), end='')
 
+        # Print all register values
         for i in range(8):
             print(" %02X" % self.reg[i], end='')
 

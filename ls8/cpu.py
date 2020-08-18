@@ -37,7 +37,7 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "DIV":
-            self.reg[reg_a] /= self.reg[reg_b]
+            self.reg[reg_a] //= self.reg[reg_b]
         elif op == "MOD":
             self.reg[reg_a] %= self.reg[reg_b]
         elif op == "DEC":
@@ -141,7 +141,7 @@ class CPU:
                 self.alu("MUL", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
 
-            elif self.ir == 0b10100001:  # DIV
+            elif self.ir == 0b10100011:  # DIV
                 # Divide the value of reg A by reg B, store in reg A
                 self.alu("DIV", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))

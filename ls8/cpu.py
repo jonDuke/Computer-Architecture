@@ -205,6 +205,47 @@ class CPU:
                 # Compare the values in two registers, sets the fl register
                 self.alu("CMP", self.ram_read(self.pc+1), 
                                 self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b01010100:  # JMP
+                # Jump to the address stored in the given register
+                self.pc = self.reg[self.ram_read(self.pc+1)]
+                continue
+            
+            elif self.ir == 0b01010101:  # JEQ
+                # Jump to the address if the Equal flag is true
+                if self.fl & 0b00000001:  # E mask
+                    self.pc = self.reg[self.ram_read(self.pc+1)]
+                    continue
+
+            elif self.ir == 0b01011010:  # JGE
+                # Jump to the address if the Equal or Greater flags are true
+                if self.fl & 0b00000011:  # GE mask
+                    self.pc = self.reg[self.ram_read(self.pc+1)]
+                    continue
+            
+            elif self.ir == 0b01010111:  # JGT
+                # Jump to the address if the Greater flag is true
+                if self.fl & 0b00000010:  # GE mask
+                    self.pc = self.reg[self.ram_read(self.pc+1)]
+                    continue
+            
+            elif self.ir == 0b01011001:  # JLE
+                # Jump to the address if the Less than flag is true
+                if self.fl & 0b00000100:  # GE mask
+                    self.pc = self.reg[self.ram_read(self.pc+1)]
+                    continue
+
+            elif self.ir == 0b01011000:  # JLT
+                # Jump to the address if the Equal or Lesser flags are true
+                if self.fl & 0b00000101:  # GE mask
+                    self.pc = self.reg[self.ram_read(self.pc+1)]
+                    continue
+            
+            elif self.ir == 0b01010110:  # JNE
+                # Jump to the address if the Equal flag is false
+                if not self.fl & 0b00000001:  # E mask
+                    self.pc = self.reg[self.ram_read(self.pc+1)]
+                    continue
 
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator

@@ -26,13 +26,17 @@ class CPU:
             self.ram[address] = instruction
             address += 1
 
-
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "SUB":
+            self.reg[reg_a] -= self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "DIV":
+            self.reg[reg_a] /= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
     
@@ -99,6 +103,26 @@ class CPU:
                 self.mar = self.ram_read(self.pc + 1)  # Load register number
                 self.mdr = self.reg[self.mar]  # load the number from the register
                 print(self.mdr)  # print the number
+            
+            elif self.ir == 0b10100000:  # ADD
+                # Add the values of two registers, store in reg A
+                self.alu("ADD", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10100001:  # SUB
+                # Subtract the value of reg A from reg B, store in reg A
+                self.alu("SUB", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10100010:  # MUL
+                # Multiply the values of two registers, store in reg A
+                self.alu("MUL", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+
+            elif self.ir == 0b10100001:  # DIV
+                # Divide the value of reg A by reg B, store in reg A
+                self.alu("DIV", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
 
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator

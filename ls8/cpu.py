@@ -12,6 +12,7 @@ class CPU:
         self.ir = 0   # instruction register, copy of the currently executing instruction
         self.mar = 0  # memory address register, holds the address we're reading or writing
         self.mdr = 0  # memory data register, holds the value to write, or the value just read
+        self.fl = 0   # flags register: 0b00000LGE  (<, >, ==)
 
         # storage
         self.ram = [0] * 256   # RAM storage
@@ -58,9 +59,21 @@ class CPU:
             self.reg[reg_a] <<= self.reg[reg_b]
         elif op == "SHR":
             self.reg[reg_a] >>= self.reg[reg_b]
+        
+        # Compare
+        elif op == "CMP":
+            if self.reg[reg_a] < self.reg[reg_b]:
+                # less than, set the L flag
+                self.fl = 0b0000100
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                # greater than, set the G flag
+                self.fl = 0b0000010
+            else:
+                # equal, set the E flag
+                self.fl = 0b0000001
 
         else:
-            raise Exception("Unsupported ALU operation")
+            raise Exception("Unsupported ALU operation:", op)
     
     def ram_read(self, address):
         """
@@ -187,6 +200,11 @@ class CPU:
             elif self.ir == 0b01100101:  # INC
                 # Increment the value in the given register by 1
                 self.alu("INC", self.ram_read(self.pc+1), 0)
+            
+            elif self.ir == 0b10100111:  # CMP
+                # Compare the values in two registers, sets the fl register
+                self.alu("CMP", self.ram_read(self.pc+1), 
+                                self.ram_read(self.pc+2))
 
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator

@@ -29,6 +29,7 @@ class CPU:
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
+        # Standard operations
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "SUB":
@@ -37,6 +38,27 @@ class CPU:
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == "DIV":
             self.reg[reg_a] /= self.reg[reg_b]
+        elif op == "MOD":
+            self.reg[reg_a] %= self.reg[reg_b]
+        elif op == "DEC":
+            self.reg[reg_a] -= 1
+        elif op == "INC":
+            self.reg[reg_a] += 1
+        
+        # Bitwise operations
+        elif op == "AND":
+            self.reg[reg_a] &= self.reg[reg_b]
+        elif op == "OR":
+            self.reg[reg_a] |= self.reg[reg_b]
+        elif op == "XOR":
+            self.reg[reg_a] ^= self.reg[reg_b]
+        elif op == "NOT":
+            self.reg[reg_a] = ~self.reg[reg_a]
+        elif op == "SHL":
+            self.reg[reg_a] <<= self.reg[reg_b]
+        elif op == "SHR":
+            self.reg[reg_a] >>= self.reg[reg_b]
+
         else:
             raise Exception("Unsupported ALU operation")
     
@@ -123,6 +145,48 @@ class CPU:
                 # Divide the value of reg A by reg B, store in reg A
                 self.alu("DIV", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10100100:  # MOD
+                # Divide the value of reg A by reg B, store the remainder in reg A
+                self.alu("MOD", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10101000:  # AND
+                # Perform a bitwise AND on two registers, store in reg A
+                self.alu("AND", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10101010:  # OR
+                # Perform a bitwise OR on two registers, store in reg A
+                self.alu("OR", self.ram_read(self.pc+1),
+                               self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10101011:  # XOR
+                # Perform a bitwise XOR on two registers, store in reg A
+                self.alu("XOR", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b01101001:  # NOT
+                # Perform a bitwise NOT on one register
+                self.alu("NOT", self.ram_read(self.pc+1), 0)
+            
+            elif self.ir == 0b10101100:  # SHL
+                # Shift the value in reg A to the left by the number in reg B
+                self.alu("SHL", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b10101101:  # SHR
+                # Shift the value in reg A to the right by the number in reg B
+                self.alu("SHR", self.ram_read(self.pc+1),
+                                self.ram_read(self.pc+2))
+            
+            elif self.ir == 0b01100110:  # DEC
+                # Decrement the value in the given register by 1
+                self.alu("DEC", self.ram_read(self.pc+1), 0)
+            
+            elif self.ir == 0b01100101:  # INC
+                # Increment the value in the given register by 1
+                self.alu("INC", self.ram_read(self.pc+1), 0)
 
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator

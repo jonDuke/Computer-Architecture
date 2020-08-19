@@ -1,6 +1,7 @@
 """CPU functionality."""
 
 import sys
+import time
 
 class CPU:
     """Main CPU class."""
@@ -13,11 +14,15 @@ class CPU:
         self.mar = 0  # memory address register, holds the address we're reading or writing
         self.mdr = 0  # memory data register, holds the value to write, or the value just read
         self.fl = 0   # flags register: 0b00000LGE  (<, >, ==)
+        self.im = 0   # interrupt manager, stores data for which interrupt vectors are set
+        self.isr = 0   # interrupt state (register), is set whenever an interrupt is triggered
 
         # storage
         self.ram = [0] * 256   # RAM storage
         self.reg = [0] * 8     # register storage
         self.reg[7] = 0xF4     # R7 defaults to 0xF4 (stack pointer)
+
+        self.interrupts_enabled = True
 
     def load(self, program):
         """Load a program into memory."""
@@ -92,8 +97,24 @@ class CPU:
         # Ensure it is a valid address
         if address < len(self.ram) and address >= 0:
             self.ram[address] = value
+
+            if address >= 248:
+                # An interrupt vector has been set, update self.im
+                # Set nth bit, 248: bit 0, ... , 255: bit 7
+                n = address-248
+                self.im |= (1 << n)  # set using the bitwise OR
         else:
             raise IndexError(f"Invalid RAM address given: %02X" % address)
+    
+    def stack_push(self, value):
+        """ pushes the value onto the stack """
+        self.reg[7] -= 1  # decrement the stack pointer
+        self.ram_write(value, self.reg[7])  # save to the stack
+
+    def stack_pop(self):
+        """ pops the next value off of the stack and returns it """
+        self.reg[7] += 1  # increment the stack pointer
+        return self.ram_read(self.reg[7]-1)  # return the value
 
     def trace(self):
         """
@@ -122,7 +143,42 @@ class CPU:
     def run(self):
         """Run the CPU."""
         running = True
+        timer = 0
+        last_time = time.time()
         while running:
+            # -- Interrupt handling --
+            # Update the system timer
+            timer += time.time() - last_time
+            last_time = time.time()
+            if timer >= 1:
+                # 1 second has passed, set timer interrupt
+                self.isr |= 1  # set bit 0 to 1
+                timer -= 1  # reset timer for the next second
+
+            if self.interrupts_enabled:
+                # Check if any interrupts have occurred
+                masked_interrupts = self.im & self.isr
+                mask = 0b00000001
+                for i in range(8):
+                    # check each bit of masked_interrupts to see which
+                    # interrupt occurred (if any)
+                    if mask & masked_interrupts:
+                        # bit i was set
+                        self.interrupts_enabled = False  # disable further interrupts
+                        self.isr = 0  # clear the IS register
+                        # Push registers onto the stack
+                        self.stack_push(self.pc)
+                        self.stack_push(self.fl)
+                        for j in range(7):
+                            self.stack_push(self.reg[j])
+                        
+                        # Look up the interrupt vector and set PC to it
+                        self.pc = self.ram_read(248+i)  # addresses 248-255
+
+                        break  # stop checking further
+                    mask <<= 1
+
+            # -- Main Execution --
             # Fetch the next instruction
             self.ir = self.ram_read(self.pc)
 
@@ -138,6 +194,12 @@ class CPU:
                 self.mar = self.ram_read(self.pc + 1)  # Load register number
                 self.mdr = self.reg[self.mar]  # load the number from the register
                 print(self.mdr)  # print the number
+
+            elif self.ir == 0b01001000:  # PRA
+                # Print alpha character value stored in the given register
+                self.mar = self.ram_read(self.pc + 1)  # Load register number
+                self.mdr = self.reg[self.mar]  # load the value from the register
+                print(chr(self.mdr))  # print the character
             
             elif self.ir == 0b10100000:  # ADD
                 # Add the values of two registers, store in reg A
@@ -249,14 +311,33 @@ class CPU:
             
             elif self.ir == 0b01000101:  # PUSH
                 # Push the value in the given register onto the stack
-                self.reg[7] -= 1  # decrement the stack pointer
                 value = self.reg[self.ram_read(self.pc+1)]  # get the value
-                self.ram_write(value, self.reg[7])  # save to the stack
+                self.stack_push(value)  # save to the stack
             
             elif self.ir == 0b01000110:  # POP
                 # Pop a value off the stack and store in the given register
-                self.reg[self.ram_read(self.pc+1)] = self.ram_read(self.reg[7])
-                self.reg[7] += 1  # increment the stack pointer
+                self.reg[self.ram_read(self.pc+1)] = self.stack_pop()
+            
+            elif self.ir == 0b10000100:  #ST
+                # Store value in reg B in the address stored in reg A
+                self.mar = self.reg[self.ram_read(self.pc+1)]  # value of reg A
+                self.mdr = self.reg[self.ram_read(self.pc+2)]  # value of reg B
+                self.ram_write(self.mdr, self.mar)
+
+            elif self.ir == 0b01010010:  # INT
+                # Issue the interrupt number stored in the given register
+                n = self.reg[self.ram_read(self.pc+1)]  # get the register value
+                self.isr = 1 << n  # set the nth bit of the IS register
+            
+            elif self.ir == 0b00010011:  # IRET
+                # Return from an interrupt handler
+                # Pop registers back off the stack
+                for i in range(6,-1,-1):
+                    self.reg[i] = self.stack_pop()
+                self.fl = self.stack_pop()
+                self.pc = self.stack_pop()
+                self.interrupts_enabled = True  # re-enable interrupts
+                continue
 
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator

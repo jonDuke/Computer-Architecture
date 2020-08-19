@@ -246,6 +246,17 @@ class CPU:
                 if not self.fl & 0b00000001:  # E mask
                     self.pc = self.reg[self.ram_read(self.pc+1)]
                     continue
+            
+            elif self.ir == 0b01000101:  # PUSH
+                # Push the value in the given register onto the stack
+                self.reg[7] -= 1  # decrement the stack pointer
+                value = self.reg[self.ram_read(self.pc+1)]  # get the value
+                self.ram_write(value, self.reg[7])  # save to the stack
+            
+            elif self.ir == 0b01000110:  # POP
+                # Pop a value off the stack and store in the given register
+                self.reg[self.ram_read(self.pc+1)] = self.ram_read(self.reg[7])
+                self.reg[7] += 1  # increment the stack pointer
 
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator

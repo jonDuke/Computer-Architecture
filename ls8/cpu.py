@@ -49,7 +49,7 @@ class CPU:
             self.reg[reg_a] -= 1
         elif op == "INC":
             self.reg[reg_a] += 1
-        
+
         # Bitwise operations
         elif op == "AND":
             self.reg[reg_a] &= self.reg[reg_b]
@@ -63,7 +63,7 @@ class CPU:
             self.reg[reg_a] <<= self.reg[reg_b]
         elif op == "SHR":
             self.reg[reg_a] >>= self.reg[reg_b]
-        
+
         # Compare
         elif op == "CMP":
             if self.reg[reg_a] < self.reg[reg_b]:
@@ -78,7 +78,7 @@ class CPU:
 
         else:
             raise Exception("Unsupported ALU operation:", op)
-    
+
     def ram_read(self, address):
         """
         returns the value in RAM at the given address
@@ -88,7 +88,7 @@ class CPU:
             return self.ram[address]
         else:
             raise IndexError(f"Invalid RAM address given: %02X" % address)
-    
+
     def ram_write(self, value, address):
         """
         Writes a value to RAM at the given address
@@ -98,7 +98,7 @@ class CPU:
             self.ram[address] = value
         else:
             raise IndexError(f"Invalid RAM address given: %02X" % address)
-    
+
     def stack_push(self, value):
         """ pushes the value onto the stack """
         self.reg[7] -= 1  # decrement the stack pointer
@@ -147,7 +147,7 @@ class CPU:
                 # 1 second has passed, set timer interrupt
                 self.reg[6] |= 1  # set IS bit 0 to 1
                 timer -= 1  # reset timer for the next second
-            
+
             # Check keyboard input
             if msvcrt.kbhit():
                 key = ord(msvcrt.getch())  # Get value of the last key hit
@@ -170,7 +170,7 @@ class CPU:
                         self.stack_push(self.fl)
                         for j in range(7):
                             self.stack_push(self.reg[j])
-                        
+
                         # Look up the interrupt vector and set PC to it
                         self.pc = self.ram_read(248+i)  # addresses 248-255
 
@@ -199,17 +199,17 @@ class CPU:
                 self.mar = self.ram_read(self.pc + 1)  # Load register number
                 self.mdr = self.reg[self.mar]  # load the value from the register
                 print(chr(self.mdr))  # print the character
-            
+
             elif self.ir == 0b10100000:  # ADD
                 # Add the values of two registers, store in reg A
                 self.alu("ADD", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10100001:  # SUB
                 # Subtract the value of reg A from reg B, store in reg A
                 self.alu("SUB", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10100010:  # MUL
                 # Multiply the values of two registers, store in reg A
                 self.alu("MUL", self.ram_read(self.pc+1),
@@ -219,59 +219,59 @@ class CPU:
                 # Divide the value of reg A by reg B, store in reg A
                 self.alu("DIV", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10100100:  # MOD
                 # Divide the value of reg A by reg B, store the remainder in reg A
                 self.alu("MOD", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10101000:  # AND
                 # Perform a bitwise AND on two registers, store in reg A
                 self.alu("AND", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10101010:  # OR
                 # Perform a bitwise OR on two registers, store in reg A
                 self.alu("OR", self.ram_read(self.pc+1),
                                self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10101011:  # XOR
                 # Perform a bitwise XOR on two registers, store in reg A
                 self.alu("XOR", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b01101001:  # NOT
                 # Perform a bitwise NOT on one register
                 self.alu("NOT", self.ram_read(self.pc+1), 0)
-            
+
             elif self.ir == 0b10101100:  # SHL
                 # Shift the value in reg A to the left by the number in reg B
                 self.alu("SHL", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b10101101:  # SHR
                 # Shift the value in reg A to the right by the number in reg B
                 self.alu("SHR", self.ram_read(self.pc+1),
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b01100110:  # DEC
                 # Decrement the value in the given register by 1
                 self.alu("DEC", self.ram_read(self.pc+1), 0)
-            
+
             elif self.ir == 0b01100101:  # INC
                 # Increment the value in the given register by 1
                 self.alu("INC", self.ram_read(self.pc+1), 0)
-            
+
             elif self.ir == 0b10100111:  # CMP
                 # Compare the values in two registers, sets the fl register
                 self.alu("CMP", self.ram_read(self.pc+1), 
                                 self.ram_read(self.pc+2))
-            
+
             elif self.ir == 0b01010100:  # JMP
                 # Jump to the address stored in the given register
                 self.pc = self.reg[self.ram_read(self.pc+1)]
                 continue
-            
+
             elif self.ir == 0b01010101:  # JEQ
                 # Jump to the address if the Equal flag is true
                 if self.fl & 0b00000001:  # E mask
@@ -283,13 +283,13 @@ class CPU:
                 if self.fl & 0b00000011:  # GE mask
                     self.pc = self.reg[self.ram_read(self.pc+1)]
                     continue
-            
+
             elif self.ir == 0b01010111:  # JGT
                 # Jump to the address if the Greater flag is true
                 if self.fl & 0b00000010:  # GE mask
                     self.pc = self.reg[self.ram_read(self.pc+1)]
                     continue
-            
+
             elif self.ir == 0b01011001:  # JLE
                 # Jump to the address if the Less than flag is true
                 if self.fl & 0b00000100:  # GE mask
@@ -301,22 +301,22 @@ class CPU:
                 if self.fl & 0b00000101:  # GE mask
                     self.pc = self.reg[self.ram_read(self.pc+1)]
                     continue
-            
+
             elif self.ir == 0b01010110:  # JNE
                 # Jump to the address if the Equal flag is false
                 if not self.fl & 0b00000001:  # E mask
                     self.pc = self.reg[self.ram_read(self.pc+1)]
                     continue
-            
+
             elif self.ir == 0b01000101:  # PUSH
                 # Push the value in the given register onto the stack
                 value = self.reg[self.ram_read(self.pc+1)]  # get the value
                 self.stack_push(value)  # save to the stack
-            
+
             elif self.ir == 0b01000110:  # POP
                 # Pop a value off the stack and store in the given register
                 self.reg[self.ram_read(self.pc+1)] = self.stack_pop()
-            
+
             elif self.ir == 0b10000100:  # ST
                 # Store value in reg B in the address stored in reg A
                 self.mar = self.reg[self.ram_read(self.pc+1)]  # value of reg A
@@ -333,7 +333,7 @@ class CPU:
                 # Issue the interrupt number stored in the given register
                 n = self.reg[self.ram_read(self.pc+1)]  # get the register value
                 self.reg[6] = 1 << n  # set the nth bit of the IS register
-            
+
             elif self.ir == 0b00010011:  # IRET
                 # Return from an interrupt handler
                 # Pop registers back off the stack
@@ -350,6 +350,6 @@ class CPU:
 
             else:
                 raise Exception(f"Instruction code not implemented: %02X" % self.ir)
-            
+
             # increment the program counter according to the 1st 2 bits of ir
             self.pc += (self.ir >> 6) + 1

@@ -14,8 +14,6 @@ class CPU:
         self.mar = 0  # memory address register, holds the address we're reading or writing
         self.mdr = 0  # memory data register, holds the value to write, or the value just read
         self.fl = 0   # flags register: 0b00000LGE  (<, >, ==)
-        self.im = 0   # interrupt manager, stores data for which interrupt vectors are set
-        self.isr = 0   # interrupt state (register), is set whenever an interrupt is triggered
 
         # storage
         self.ram = [0] * 256   # RAM storage
@@ -97,12 +95,6 @@ class CPU:
         # Ensure it is a valid address
         if address < len(self.ram) and address >= 0:
             self.ram[address] = value
-
-            if address >= 248:
-                # An interrupt vector has been set, update self.im
-                # Set nth bit, 248: bit 0, ... , 255: bit 7
-                n = address-248
-                self.im |= (1 << n)  # set using the bitwise OR
         else:
             raise IndexError(f"Invalid RAM address given: %02X" % address)
     
@@ -152,12 +144,12 @@ class CPU:
             last_time = time.time()
             if timer >= 1:
                 # 1 second has passed, set timer interrupt
-                self.isr |= 1  # set bit 0 to 1
+                self.reg[6] |= 1  # set IS bit 0 to 1
                 timer -= 1  # reset timer for the next second
 
             if self.interrupts_enabled:
                 # Check if any interrupts have occurred
-                masked_interrupts = self.im & self.isr
+                masked_interrupts = self.reg[5] & self.reg[6]
                 mask = 0b00000001
                 for i in range(8):
                     # check each bit of masked_interrupts to see which
@@ -165,7 +157,7 @@ class CPU:
                     if mask & masked_interrupts:
                         # bit i was set
                         self.interrupts_enabled = False  # disable further interrupts
-                        self.isr = 0  # clear the IS register
+                        self.reg[6] = 0  # clear the IS register
                         # Push registers onto the stack
                         self.stack_push(self.pc)
                         self.stack_push(self.fl)
@@ -327,7 +319,7 @@ class CPU:
             elif self.ir == 0b01010010:  # INT
                 # Issue the interrupt number stored in the given register
                 n = self.reg[self.ram_read(self.pc+1)]  # get the register value
-                self.isr = 1 << n  # set the nth bit of the IS register
+                self.reg[6] = 1 << n  # set the nth bit of the IS register
             
             elif self.ir == 0b00010011:  # IRET
                 # Return from an interrupt handler

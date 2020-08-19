@@ -2,6 +2,7 @@
 
 import sys
 import time
+import msvcrt
 
 class CPU:
     """Main CPU class."""
@@ -146,6 +147,12 @@ class CPU:
                 # 1 second has passed, set timer interrupt
                 self.reg[6] |= 1  # set IS bit 0 to 1
                 timer -= 1  # reset timer for the next second
+            
+            # Check keyboard input
+            if msvcrt.kbhit():
+                key = ord(msvcrt.getch())  # Get value of the last key hit
+                self.ram_write(key, 0xF4)  # Store in RAM at address F4
+                self.reg[6] |= 2  # Set IS bit 1
 
             if self.interrupts_enabled:
                 # Check if any interrupts have occurred
@@ -310,11 +317,17 @@ class CPU:
                 # Pop a value off the stack and store in the given register
                 self.reg[self.ram_read(self.pc+1)] = self.stack_pop()
             
-            elif self.ir == 0b10000100:  #ST
+            elif self.ir == 0b10000100:  # ST
                 # Store value in reg B in the address stored in reg A
                 self.mar = self.reg[self.ram_read(self.pc+1)]  # value of reg A
                 self.mdr = self.reg[self.ram_read(self.pc+2)]  # value of reg B
                 self.ram_write(self.mdr, self.mar)
+
+            elif self.ir == 0b10000011:  # LD
+                # Loads reg A with the value at the memory address stored in reg B
+                self.mar = self.reg[self.ram_read(self.pc+2)]
+                self.mdr = self.ram_read(self.mar)
+                self.reg[self.ram_read(self.pc+1)] = self.mdr
 
             elif self.ir == 0b01010010:  # INT
                 # Issue the interrupt number stored in the given register

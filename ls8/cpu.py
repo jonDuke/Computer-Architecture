@@ -23,6 +23,43 @@ class CPU:
 
         self.interrupts_enabled = True
 
+        # Command lookup table
+        self.command_table = {
+            0b10100000: self.ADD,
+            0b10101000: self.AND,
+            0b01010000: self.CALL,
+            0b10100111: self.CMP,
+            0b01100110: self.DEC,
+            0b10100011: self.DIV,
+            0b01100101: self.INC,
+            0b01010010: self.INT,
+            0b00010011: self.IRET,
+            0b01010101: self.JEQ,
+            0b01011010: self.JGE,
+            0b01010111: self.JGT,
+            0b01011001: self.JLE,
+            0b01011000: self.JLT,
+            0b01010100: self.JMP,
+            0b01010110: self.JNE,
+            0b10000011: self.LD,
+            0b10000010: self.LDI,
+            0b10100100: self.MOD,
+            0b10100010: self.MUL,
+            0b00000000: self.NOP,
+            0b01101001: self.NOT,
+            0b10101010: self.OR,
+            0b01000110: self.POP,
+            0b01001000: self.PRA,
+            0b01000111: self.PRN,
+            0b01000101: self.PUSH,
+            0b00010001: self.RET,
+            0b10101100: self.SHL,
+            0b10101101: self.SHR,
+            0b10000100: self.ST,
+            0b10100001: self.SUB,
+            0b10101011: self.XOR,
+        }
+
     def load(self, program):
         """Load a program into memory."""
 
@@ -181,190 +218,193 @@ class CPU:
             # Fetch the next instruction
             self.ir = self.ram_read(self.pc)
 
-            # Decode then execute
-            if self.ir == 0b10000010:  # LDI
-                # Set the value of a register to an integer
-                self.mar = self.ram_read(self.pc + 1)  # Load register number
-                self.mdr = self.ram_read(self.pc + 2)  # Load the integer we are storing
-                self.reg[self.mar] = self.mdr  # Store that value
+            if self.ir == 0b00000001:  # HLT
+                # Halt execution, break out of the while loop
+                break
 
-            elif self.ir == 0b01000111:  # PRN
-                # Print numeric value stored in the given register
-                self.mar = self.ram_read(self.pc + 1)  # Load register number
-                self.mdr = self.reg[self.mar]  # load the number from the register
-                print(self.mdr)  # print the number
-
-            elif self.ir == 0b01001000:  # PRA
-                # Print alpha character value stored in the given register
-                self.mar = self.ram_read(self.pc + 1)  # Load register number
-                self.mdr = self.reg[self.mar]  # load the value from the register
-                print(chr(self.mdr))  # print the character
-
-            elif self.ir == 0b10100000:  # ADD
-                # Add the values of two registers, store in reg A
-                self.alu("ADD", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10100001:  # SUB
-                # Subtract the value of reg A from reg B, store in reg A
-                self.alu("SUB", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10100010:  # MUL
-                # Multiply the values of two registers, store in reg A
-                self.alu("MUL", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10100011:  # DIV
-                # Divide the value of reg A by reg B, store in reg A
-                self.alu("DIV", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10100100:  # MOD
-                # Divide the value of reg A by reg B, store the remainder in reg A
-                self.alu("MOD", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10101000:  # AND
-                # Perform a bitwise AND on two registers, store in reg A
-                self.alu("AND", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10101010:  # OR
-                # Perform a bitwise OR on two registers, store in reg A
-                self.alu("OR", self.ram_read(self.pc+1),
-                               self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10101011:  # XOR
-                # Perform a bitwise XOR on two registers, store in reg A
-                self.alu("XOR", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b01101001:  # NOT
-                # Perform a bitwise NOT on one register
-                self.alu("NOT", self.ram_read(self.pc+1), 0)
-
-            elif self.ir == 0b10101100:  # SHL
-                # Shift the value in reg A to the left by the number in reg B
-                self.alu("SHL", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b10101101:  # SHR
-                # Shift the value in reg A to the right by the number in reg B
-                self.alu("SHR", self.ram_read(self.pc+1),
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b01100110:  # DEC
-                # Decrement the value in the given register by 1
-                self.alu("DEC", self.ram_read(self.pc+1), 0)
-
-            elif self.ir == 0b01100101:  # INC
-                # Increment the value in the given register by 1
-                self.alu("INC", self.ram_read(self.pc+1), 0)
-
-            elif self.ir == 0b10100111:  # CMP
-                # Compare the values in two registers, sets the fl register
-                self.alu("CMP", self.ram_read(self.pc+1), 
-                                self.ram_read(self.pc+2))
-
-            elif self.ir == 0b01010100:  # JMP
-                # Jump to the address stored in the given register
-                self.pc = self.reg[self.ram_read(self.pc+1)]
-                continue
-
-            elif self.ir == 0b01010101:  # JEQ
-                # Jump to the address if the Equal flag is true
-                if self.fl & 0b00000001:  # E mask
-                    self.pc = self.reg[self.ram_read(self.pc+1)]
-                    continue
-
-            elif self.ir == 0b01011010:  # JGE
-                # Jump to the address if the Equal or Greater flags are true
-                if self.fl & 0b00000011:  # GE mask
-                    self.pc = self.reg[self.ram_read(self.pc+1)]
-                    continue
-
-            elif self.ir == 0b01010111:  # JGT
-                # Jump to the address if the Greater flag is true
-                if self.fl & 0b00000010:  # GE mask
-                    self.pc = self.reg[self.ram_read(self.pc+1)]
-                    continue
-
-            elif self.ir == 0b01011001:  # JLE
-                # Jump to the address if the Less than flag is true
-                if self.fl & 0b00000100:  # GE mask
-                    self.pc = self.reg[self.ram_read(self.pc+1)]
-                    continue
-
-            elif self.ir == 0b01011000:  # JLT
-                # Jump to the address if the Equal or Lesser flags are true
-                if self.fl & 0b00000101:  # GE mask
-                    self.pc = self.reg[self.ram_read(self.pc+1)]
-                    continue
-
-            elif self.ir == 0b01010110:  # JNE
-                # Jump to the address if the Equal flag is false
-                if not self.fl & 0b00000001:  # E mask
-                    self.pc = self.reg[self.ram_read(self.pc+1)]
-                    continue
-
-            elif self.ir == 0b01000101:  # PUSH
-                # Push the value in the given register onto the stack
-                value = self.reg[self.ram_read(self.pc+1)]  # get the value
-                self.stack_push(value)  # save to the stack
-
-            elif self.ir == 0b01000110:  # POP
-                # Pop a value off the stack and store in the given register
-                self.reg[self.ram_read(self.pc+1)] = self.stack_pop()
-
-            elif self.ir == 0b10000100:  # ST
-                # Store value in reg B in the address stored in reg A
-                self.mar = self.reg[self.ram_read(self.pc+1)]  # value of reg A
-                self.mdr = self.reg[self.ram_read(self.pc+2)]  # value of reg B
-                self.ram_write(self.mdr, self.mar)
-
-            elif self.ir == 0b10000011:  # LD
-                # Loads reg A with the value at the memory address stored in reg B
-                self.mar = self.reg[self.ram_read(self.pc+2)]
-                self.mdr = self.ram_read(self.mar)
-                self.reg[self.ram_read(self.pc+1)] = self.mdr
-
-            elif self.ir == 0b01010010:  # INT
-                # Issue the interrupt number stored in the given register
-                n = self.reg[self.ram_read(self.pc+1)]  # get the register value
-                self.reg[6] = 1 << n  # set the nth bit of the IS register
-
-            elif self.ir == 0b00010011:  # IRET
-                # Return from an interrupt handler
-                # Pop registers back off the stack
-                for i in range(6,-1,-1):
-                    self.reg[i] = self.stack_pop()
-                self.fl = self.stack_pop()
-                self.pc = self.stack_pop()
-                self.interrupts_enabled = True  # re-enable interrupts
-                continue
-
-            elif self.ir == 0b01010000:  # CALL
-                # Calls a subroutine at the address stored in the register
-                self.stack_push(self.pc + 2)  # push address of command to return to
-                self.pc = self.reg[self.ram_read(self.pc+1)]  # set PC to the register's value
-                continue
-            
-            elif self.ir == 0b00010001:  # RET
-                # Return from subroutine
-                self.pc = self.stack_pop()  # return to the pc stored on the stack
-                continue
-
-            elif self.ir == 0b00000000:  # NOP
-                # Do nothing for this instruction
-                pass
-
-            elif self.ir == 0b00000001:  # HLT
-                # Halt the emulator
-                running = False
-
-            else:
+            # Check that the command exists
+            if self.ir not in self.command_table:
                 raise Exception(f"Instruction code not implemented: %02X" % self.ir)
 
-            # increment the program counter according to the 1st 2 bits of ir
-            self.pc += (self.ir >> 6) + 1
+            # Call the appropriate command from the lookup table
+            advance = self.command_table[self.ir]()
+
+            if advance is None:
+                # increment the program counter according to the 1st 2 bits of ir
+                self.pc += (self.ir >> 6) + 1
+            # Else, the command moved PC explicitly
+
+
+    # --- LS8 CPU Commands ---
+    # Loading/Storing Variables
+    def LDI(self):
+        # Set the value of a register to an integer
+        self.mar = self.ram_read(self.pc + 1)  # Load register number
+        self.mdr = self.ram_read(self.pc + 2)  # Load the integer we are storing
+        self.reg[self.mar] = self.mdr  # Store that value
+
+    def LD(self):
+        # Loads reg A with the value at the memory address stored in reg B
+        self.mar = self.reg[self.ram_read(self.pc+2)]
+        self.mdr = self.ram_read(self.mar)
+        self.reg[self.ram_read(self.pc+1)] = self.mdr
+
+    def ST(self):
+        # Store value in reg B in the address stored in reg A
+        self.mar = self.reg[self.ram_read(self.pc+1)]  # value of reg A
+        self.mdr = self.reg[self.ram_read(self.pc+2)]  # value of reg B
+        self.ram_write(self.mdr, self.mar)
+
+    # Stack Operations
+    def PUSH(self):
+        # Push the value in the given register onto the stack
+        value = self.reg[self.ram_read(self.pc+1)]  # get the value
+        self.stack_push(value)  # save to the stack
+
+    def POP(self):
+        # Pop a value off the stack and store in the given register
+        self.reg[self.ram_read(self.pc+1)] = self.stack_pop()
+
+    # Subroutines
+    def CALL(self):
+        # Calls a subroutine at the address stored in the register
+        self.stack_push(self.pc + 2)  # push address of command to return to
+        self.pc = self.reg[self.ram_read(self.pc+1)]  # set PC to the register's value
+        return False
+
+    def RET(self):
+        # Return from subroutine
+        self.pc = self.stack_pop()  # return to the pc stored on the stack
+        return False
+
+    # Interrupts
+    def INT(self):
+        # Issue the interrupt number stored in the given register
+        n = self.reg[self.ram_read(self.pc+1)]  # get the register value
+        self.reg[6] = 1 << n  # set the nth bit of the IS register
+
+    def IRET(self):
+        # Return from an interrupt handler
+        # Pop registers back off the stack
+        for i in range(6,-1,-1):
+            self.reg[i] = self.stack_pop()
+        self.fl = self.stack_pop()
+        self.pc = self.stack_pop()
+        self.interrupts_enabled = True  # re-enable interrupts
+        return False
+
+    # Printing
+    def PRN(self):
+        # Print numeric value stored in the given register
+        self.mar = self.ram_read(self.pc + 1)  # Load register number
+        self.mdr = self.reg[self.mar]  # load the number from the register
+        print(self.mdr)  # print the number
+
+    def PRA(self):
+        # Print alpha character value stored in the given register
+        self.mar = self.ram_read(self.pc + 1)  # Load register number
+        self.mdr = self.reg[self.mar]  # load the value from the register
+        print(chr(self.mdr))  # print the character
+
+    # ALU Operations
+    def ADD(self):
+        # Add the values of two registers, store in reg A
+        self.alu("ADD", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def SUB(self):
+        # Subtract the value of reg A from reg B, store in reg A
+        self.alu("SUB", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def MUL(self):
+        # Multiply the values of two registers, store in reg A
+        self.alu("MUL", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def DIV(self):
+        # Divide the value of reg A by reg B, store in reg A
+        self.alu("DIV", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def MOD(self):
+        # Divide the value of reg A by reg B, store the remainder in reg A
+        self.alu("MOD", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def AND(self):
+        # Perform a bitwise AND on two registers, store in reg A
+        self.alu("AND", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def OR(self):
+        # Perform a bitwise OR on two registers, store in reg A
+        self.alu("OR", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def XOR(self):
+        # Perform a bitwise XOR on two registers, store in reg A
+        self.alu("XOR", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def NOT(self):
+        # Perform a bitwise NOT on one register
+        self.alu("NOT", self.ram_read(self.pc+1), 0)
+
+    def SHL(self):
+        # Shift the value in reg A to the left by the number in reg B
+        self.alu("SHL", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def SHR(self):
+        # Shift the value in reg A to the right by the number in reg B
+        self.alu("SHR", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    def DEC(self):
+        # Decrement the value in the given register by 1
+        self.alu("DEC", self.ram_read(self.pc+1), 0)
+
+    def INC(self):
+        # Increment the value in the given register by 1
+        self.alu("INC", self.ram_read(self.pc+1), 0)
+
+    def CMP(self):
+        # Compare the values in two registers, sets the fl register
+        self.alu("CMP", self.ram_read(self.pc+1), self.ram_read(self.pc+2))
+
+    # Jump Operations
+    def JMP(self):
+        # Jump to the address stored in the given register
+        self.pc = self.reg[self.ram_read(self.pc+1)]
+        return False
+
+    def JEQ(self):
+        # Jump to the address if the Equal flag is true
+        if self.fl & 0b00000001:  # E mask
+            self.pc = self.reg[self.ram_read(self.pc+1)]
+            return False
+
+    def JGE(self):
+        # Jump to the address if the Equal or Greater flags are true
+        if self.fl & 0b00000011:  # GE mask
+            self.pc = self.reg[self.ram_read(self.pc+1)]
+            return False
+
+    def JGT(self):
+        # Jump to the address if the Greater flag is true
+        if self.fl & 0b00000010:  # GE mask
+            self.pc = self.reg[self.ram_read(self.pc+1)]
+            return False
+
+    def JLE(self):
+        # Jump to the address if the Less than flag is true
+        if self.fl & 0b00000100:  # GE mask
+            self.pc = self.reg[self.ram_read(self.pc+1)]
+            return False
+
+    def JLT(self):
+        # Jump to the address if the Equal or Lesser flags are true
+        if self.fl & 0b00000101:  # GE mask
+            self.pc = self.reg[self.ram_read(self.pc+1)]
+            return False
+
+    def JNE(self):
+        # Jump to the address if the Equal flag is false
+        if not self.fl & 0b00000001:  # E mask
+            self.pc = self.reg[self.ram_read(self.pc+1)]
+            return False
+
+    def NOP(self):
+        # Do nothing for this instruction
+        pass

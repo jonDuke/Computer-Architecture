@@ -344,6 +344,21 @@ class CPU:
                 self.interrupts_enabled = True  # re-enable interrupts
                 continue
 
+            elif self.ir == 0b01010000:  # CALL
+                # Calls a subroutine at the address stored in the register
+                self.stack_push(self.pc + 2)  # push address of command to return to
+                self.pc = self.reg[self.ram_read(self.pc+1)]  # set PC to the register's value
+                continue
+            
+            elif self.ir == 0b00010001:  # RET
+                # Return from subroutine
+                self.pc = self.stack_pop()  # return to the pc stored on the stack
+                continue
+
+            elif self.ir == 0b00000000:  # NOP
+                # Do nothing for this instruction
+                pass
+
             elif self.ir == 0b00000001:  # HLT
                 # Halt the emulator
                 running = False
